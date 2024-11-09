@@ -1,7 +1,7 @@
 # RC Car Project with Realistic Driving Experience
 
 ### v0.1
-**Autor:** Gonçalo Peres e Guilhermem Serra
+**Autor:** ###Gonçalo Peres e Guilhermem Serra
 
 ### Descrição do Projeto
 Este projeto visa criar uma experiência inovadora e desafiadora com um carro telecomandado e uma pista personalizada. O carro será controlado através de um volante e um conjunto de pedais, proporcionando uma condução mais realista. A pista será um circuito fechado em madeira, onde o objetivo é completar cada volta no menor tempo possível, evitando penalizações devido a colisões.
