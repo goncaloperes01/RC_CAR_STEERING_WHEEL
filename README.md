@@ -1,3 +1,3 @@
-# RC_CAR_STEERING_WHEEL
+# RC CAR STEERING WHEEL
 
 Name: Goncalo Peres
