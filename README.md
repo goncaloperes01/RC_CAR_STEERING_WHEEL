@@ -1,168 +1,89 @@
-# RC CAR STEERING WHEEL
+# RC Car Project with Realistic Driving Experience
 
-Name: Goncalo Peres
-// 
+### v1.0
+**Autor:** <!-- Deixa em branco para preencher posteriormente -->
 
-# dalsa_genie_nano_c2420
+### Descrição do Projeto
+Este projeto visa criar uma experiência inovadora e desafiadora com um carro telecomandado e uma pista personalizada. O carro será controlado através de um volante e um conjunto de pedais, proporcionando uma condução mais realista. A pista será um circuito fechado em madeira, onde o objetivo é completar cada volta no menor tempo possível, evitando penalizações devido a colisões.
 
-### v0.6 (David Portugal + Maria Eduarda Andrada)
-ROS driver for the [Dalsa Genie Nano C2420 Multispectral Camera](https://www.edmundoptics.eu/p/c2420-23-color-dalsa-genie-nano-poe-camera/4059/) using the GigE SDK and OpenCV. The code is based on the C++ SDK example, and it publishes two sensor_msgs/Image topics on ROS (colored and mono) and their compressed counterparts.
+**Principais Funcionalidades:**
+- Controlo do carro por volante e pedais.
+- Pista fechada com checkpoints e linha de partida/meta.
+- Penalizações automáticas e indicação visual (LEDs vermelhos) em caso de colisão.
+- Display de monitorização com tempos e dados da volta em curso.
 
-The driver also publishes images based on vegetation indexes NDVI, CVI and TVI, and each channel separately. All topics are published raw (sensor_msgs/Image) and compressed (sensor_msgs/CompressedImage).
+### Data de Lançamento
+<!-- Podes adicionar a data de lançamento aqui -->
 
-Tested on Ubuntu 18.04 and ROS Melodic
+---
 
-## Installation
+## Pré-requisitos
 
-1. Make sure you have the following dependencies: ```sudo apt install ethtool libgtk-3-dev libglade2-0 libglade2-dev```
+Para a construção e funcionamento do projeto, são necessários os seguintes componentes e ferramentas:
+- **Hardware:** Arduinos, Carro RC, Volante e pedais, Display TFT, Leds, HC05 Serial Bluetooth Brick, Breadboards, Resistências, Fios, Botões, Estruturas de madeira.
+- **Software:** Código em Arduino IDE, configuração de ligações Bluetooth e Wi-Fi, interface de monitorização.
 
-2. Register and Download the [DALSA GigE-V Framework](https://www.teledynedalsa.com/en/products/imaging/vision-software/linux-gige-v-framework/) for Linux. 
- 
-    + There's a copy of the v2.10.0.0157 of the framework from May 2019 [here](https://www.dropbox.com/s/617itmz87yzc00b/gige-v-framework_21000157.zip?dl=0), in case you don't want to register.
+### Instruções de Construção e Instalação
 
-3. Extract the x86 .tar to your ```HOME``` folder.
+1. **Montagem da Pista:**
+   - Construa a pista em madeira com uma linha de partida/meta e checkpoints.
+   - Instale LEDs ao longo da pista para indicação visual de penalizações.
 
-4. Run ```sudo ./corinstall``` in the ```~/GigE-V-Framework_2.10.0.0157/DALSA``` directory.
+2. **Configuração do Carro RC:**
+   - Realize a calibração inicial da velocidade do carro e a configuração dos sensores de colisão e checkpoints.
+   - Conecte o sistema de controlo Bluetooth e Wi-Fi para comunicação com o carro.
 
-5. Logout and login again into Ubuntu.
+3. **Instalação do Volante e Pedais:**
+   - Integre o volante e pedais com o Arduino para controlar a velocidade e direção do carro.
 
-6. Connect the camera (in our setup we connect the camera to a switch, and make sure both are in the same ethernet network).
+4. **Configuração do Display TFT:**
+   - Configure o display para mostrar os tempos de cada volta e os melhores resultados.
 
-7. Check if you can find the camera on the network:
- 
-     + ```cd ~/GigE-V-Framework_2.10.0.0157/DALSA/GigeV/tools/GigeDeviceStatus```
- 
-     + ```./GigeDeviceStatus```
- 
-     + You should now see the camera on the network:
+5. **Testes e Ajustes Finais:**
+   - Realize testes de estabilidade do carro e afine o sistema de penalizações e checkpoints.
 
-     ![camera_list](doc/dalsa_genie_cam_list.png)
+---
 
-8. Checking images from the camera using the SDK C++ example:
- 
-      + ```cd ~/GigE-V-Framework_2.10.0.0157/DALSA/GigeV/examples/genicam_cpp_demo```
- 
-      + ```make```
- 
-      + ```./genicam_cpp_demo```
- 
-      + When the program launches, you'll only see a black window. In the terminal, hit "G" and "Enter" and you'll now see the camera feed.
+## Começando a Utilizar
 
-## Note
+1. **Executar o Projeto:**
+   - Ligue o sistema e conecte o carro RC à rede Bluetooth.
+   - Posicione o carro na linha de partida.
+   - Utilize o volante e pedais para controlar o carro na pista.
 
-You do not need to set a fixed camera IP address in the network. The driver will automatically detect it.
+2. **Modos de Funcionamento:**
+   - **Modo de Corrida:** Completar voltas no menor tempo possível.
+   - **Modo de Treino:** Praticar voltas sem penalizações.
+   - **Modo de Monitorização:** Visualizar tempos e penalizações no display em tempo real.
 
-## Compiling
+---
 
-```
-cd your_work_space
-catkin_make 
-```
+## Parâmetros e Configurações Disponíveis
 
-## Example Usage
+- **Velocidade do Carro:** Configurável através do código Arduino.
+- **Duração das Penalizações:** Ajustável entre 1 a 2 segundos por colisão.
+- **Nível de Sensibilidade dos Checkpoints:** Ajustável para garantir contagem precisa das voltas.
+- **Indicação Visual de Penalizações:** LEDs vermelhos ao redor da pista.
+- **Atualização de Tempos no Display:** Atualizações a cada checkpoint.
 
-### dalsa_genie_nano_c2420
+---
 
+## Notas Importantes
 
+- É essencial manter o carro calibrado para evitar erros de contagem de voltas.
+- Recomenda-se realizar testes regulares no sistema de controlo e monitorização para assegurar a precisão das leituras.
 
-**Parameters**
+---
 
-`dalsa_camera_frame` (`string`, `default: dalsa_link`)
+## Como Contribuir
 
-The frame ID entry for the messages.
+Contribuições são bem-vindas! Para contribuir:
+1. Clone o repositório e crie uma nova branch para a sua funcionalidade ou correção.
+2. Faça commit das suas alterações e envie um pull request.
+3. Detalhe as alterações feitas no seu pull request para uma revisão mais rápida.
 
-`dalsa_camera_topic` (`string`, `default: dalsa_camera`)
+---
 
-Topic to publish colored image.
+## Licença
 
-`camera_index` (`int`, `default: 0`)
-
-Only useful for multi-camera setups. You can specify the index of the camera that you want to run.
-
-`publish_mono` (`bool`, `default: false`)
-
-Activate publishing of the monochromatic image topic as well.
-
-`dalsa_camera_mono_topic` (`string`, `default: dalsa_camera_mono`)
-
-Topic to publish mono image (if `publish_mono` is true).
-
-`use_synchronous_buffer_cycling` (`bool`, `default: false`)
-
-Enable/disable buffer full/empty handling (cycling). This allows Asynchronous (false) and synchronous (true) camera stream transferring.
-
-`tune_streaming_threads` (`bool`, `default: false`)
-
-Enable/disable transfer tuning (buffering, timeouts, thread affinity). This tunes the streaming threads, such as assigning specific CPUs to threads based on affinity.
-
-`turbo_mode` (`bool`, `default: false`)
-
-Enable/disable Turbo Mode (if available) to push past the gigabit Ethernet speed ceiling, speeding up line and frame rates beyond the nominal link capacity.
-
-
-
-**Topics**
-
-`dalsa_camera` (`sensor_msgs/Image`)
-
-RGB Image. Raw and compressed.
-
-`dalsa_camera_720p` (`sensor_msgs/Image`)
-
-Downscale RGB image to 720p. Raw and compressed.
-
-`dalsa_camera_mono` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and compressed. Only published when `publish_mono` is `true`.
-
-`dalsa_camera_mono_720p` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image, downscaled to 720p. Raw and compressed. Only published when `publish_mono` is `true`.
-
-`ndvi` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed
-
-Extra indexes that can be toggled on camera.yaml
-
-`cvi` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed.  Only published when `CVI` is `true`.
-
-`red_channel` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed. Only published when `Red` is `true`.
-
-`green_channel` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed. Only published when `Green` is `true`.
-
-`nir_channel` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed. Only published when `NIR` is `true`.
-
-`normalized_green` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed. Only published when `Normalized_Green` is `true`.
-
-`normalized_nir` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed. Only published when `Normalized_NIR` is `true`.
-
-`normalized_red` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed. Only published when `Normalized_Red` is `true`.
-
-`tvi` (`sensor_msgs/Image`)
-
-Mono (8UC1) Image. Raw and Compressed. Only published when `TVI` is `true`.
-
-
-**Node**
-
-```
-roslaunch dalsa_genie_nano_c2420 dalsa_genie_nano_c2420.launch
-```
-
-You can change the parameters on the launch file to suit your setup.
-
+Este projeto está licenciado sob a [Licença MIT](https://opensource.org/licenses/MIT). Sinta-se à vontade para utilizá-lo e modificá-lo conforme necessário.
