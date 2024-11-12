@@ -1,0 +1,81 @@
+#include <LiquidCrystal.h>
+
+// Definindo os pinos do LCD
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+// Definindo o pino do sensor PIR
+int pirPin = 7;
+
+// Variáveis de controle
+unsigned long startTime;
+unsigned long currentTime;
+bool movimentoDetectado = false;
+int voltaAtual = 1;
+int ultimaVolta = 0;
+unsigned long ultimaVoltaTempo = 0;
+
+void setup() {
+  pinMode(pirPin, INPUT);
+  lcd.begin(16, 2);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Volta: 0 - 0:0:0");
+  lcd.setCursor(0, 1);
+  lcd.print("Atual: 0 - 0:0:0");
+  startTime = millis();
+}
+
+void loop() {
+  int movimento = digitalRead(pirPin);
+
+  if (movimento == HIGH && !movimentoDetectado) {
+    movimentoDetectado = true;
+
+    // Salva a volta atual e o tempo na última volta
+    ultimaVolta = voltaAtual;
+    ultimaVoltaTempo = currentTime - startTime;
+
+    // Atualiza a primeira linha do LCD com a última volta concluída
+    lcd.setCursor(0, 0);
+    lcd.print("Volta: ");
+    lcd.print(ultimaVolta);
+    lcd.print(" - ");
+    exibirTempo(ultimaVoltaTempo);
+
+    // Reinicia o tempo de contagem para a volta atual
+    startTime = millis();
+    voltaAtual++;
+  } 
+  else if (movimento == LOW) {
+    movimentoDetectado = false;
+  }
+
+  // Atualiza o tempo atual para a volta em andamento
+  currentTime = millis();
+  unsigned long tempoAtualVolta = currentTime - startTime;
+  lcd.setCursor(0, 1);
+  lcd.print("Atual: ");
+  lcd.print(voltaAtual);
+  lcd.print(" - ");
+  exibirTempo(tempoAtualVolta);
+
+  delay(100);
+}
+
+void exibirTempo(unsigned long tempo) {
+  // Converte o tempo em minutos, segundos e milissegundos
+  int minutos = (tempo / 60000);
+  int segundos = (tempo % 60000) / 1000;
+  int milissegundos = (tempo % 1000) / 10;
+
+  if (minutos < 10) lcd.print("0");
+  lcd.print(minutos);
+  lcd.print(":");
+
+  if (segundos < 10) lcd.print("0");
+  lcd.print(segundos);
+  lcd.print(":");
+
+  if (milissegundos < 10) lcd.print("0");
+  lcd.print(milissegundos);
+}
