@@ -1,0 +1,149 @@
+// Definindo os pinos para os LEDs RGB (compartilhados entre os pares de LEDs)
+const int ledR1 = 13;  // Pino vermelho do primeiro par
+const int ledG1 = 10;  // Pino verde do primeiro par
+
+const int ledR2 = 12;  // Pino vermelho do segundo par
+const int ledG2 = 9;  // Pino verde do segundo par
+
+const int ledR3 = 11;   // Pino vermelho do terceiro par
+const int ledG3 = 8;   // Pino verde do terceiro par
+
+// Pinos dos sensores PIR
+const int pirPin1 = 7; // Sensor PIR do primeiro par
+const int pirPin2 = 6; // Sensor PIR do segundo par
+const int pirPin3 = 5; // Sensor PIR do terceiro par
+
+// Variáveis para controle de tempo
+unsigned long previousMillis1 = 0;
+unsigned long previousMillis2 = 0;
+unsigned long previousMillis3 = 0;
+unsigned long blinkMillis1 = 0;
+unsigned long blinkMillis2 = 0;
+unsigned long blinkMillis3 = 0;
+
+const unsigned long interval1 = 2000; // Tempo total do primeiro par
+const unsigned long interval2 = 2000; // Tempo total do segundo par
+const unsigned long interval3 = 3000; // Tempo total do terceiro par
+const unsigned long blinkInterval = 250; // Tempo de piscar (250 ms)
+
+// Estados dos LEDs e contadores de piscadas
+bool led1On = false;
+bool led2On = false;
+bool led3On = false;
+
+bool led1BlinkState = false;
+bool led2BlinkState = false;
+bool led3BlinkState = false;
+
+int blinkCount1 = 0;
+int blinkCount2 = 0;
+int blinkCount3 = 0;
+
+void setup() {
+  // Configura os pinos dos LEDs como saídas
+  pinMode(ledR1, OUTPUT);
+  pinMode(ledG1, OUTPUT);
+  pinMode(ledR2, OUTPUT);
+  pinMode(ledG2, OUTPUT);
+  pinMode(ledR3, OUTPUT);
+  pinMode(ledG3, OUTPUT);
+
+  // Configura os pinos dos sensores PIR como entradas
+  pinMode(pirPin1, INPUT);
+  pinMode(pirPin2, INPUT);
+  pinMode(pirPin3, INPUT);
+
+  // Inicializa os LEDs com a cor vermelha apenas no primeiro par
+  digitalWrite(ledR1, HIGH);
+  digitalWrite(ledG1, LOW);
+
+  // Os outros pares começam apagados
+  digitalWrite(ledR2, LOW);
+  digitalWrite(ledG2, LOW);
+  digitalWrite(ledR3, LOW);
+  digitalWrite(ledG3, LOW);
+}
+
+void loop() {
+  // Lê o valor dos sensores PIR
+  int pirState1 = digitalRead(pirPin1);
+  int pirState2 = digitalRead(pirPin2);
+  int pirState3 = digitalRead(pirPin3);
+
+  unsigned long currentMillis = millis();
+
+  // Controle do primeiro par
+  if (pirState1 == HIGH && !led1On) {
+    digitalWrite(ledR1, LOW);  // Apaga o vermelho
+    led1On = true;
+    previousMillis1 = currentMillis;
+    blinkMillis1 = currentMillis;
+    blinkCount1 = 0; // Reinicia o contador de piscadas
+    digitalWrite(ledR2, HIGH); // Liga vermelho no próximo par
+  }
+
+  if (led1On) {
+    // Piscar o LED verde do primeiro par
+    if (currentMillis - blinkMillis1 >= blinkInterval && blinkCount1 < interval1 / blinkInterval) {
+      blinkMillis1 = currentMillis;
+      led1BlinkState = !led1BlinkState;
+      digitalWrite(ledG1, led1BlinkState ? HIGH : LOW);
+      blinkCount1++;
+    }
+    // Desligar após o intervalo total
+    if (currentMillis - previousMillis1 >= interval1) {
+      digitalWrite(ledG1, LOW); // Apaga o verde
+      led1On = false;
+    }
+  }
+
+  // Controle do segundo par
+  if (pirState2 == HIGH && !led2On) {
+    digitalWrite(ledR2, LOW);  // Apaga o vermelho
+    led2On = true;
+    previousMillis2 = currentMillis;
+    blinkMillis2 = currentMillis;
+    blinkCount2 = 0; // Reinicia o contador de piscadas
+    digitalWrite(ledR3, HIGH); // Liga vermelho no próximo par
+  }
+
+  if (led2On) {
+    // Piscar o LED verde do segundo par
+    if (currentMillis - blinkMillis2 >= blinkInterval && blinkCount2 < interval2 / blinkInterval) {
+      blinkMillis2 = currentMillis;
+      led2BlinkState = !led2BlinkState;
+      digitalWrite(ledG2, led2BlinkState ? HIGH : LOW);
+      blinkCount2++;
+    }
+    // Desligar após o intervalo total
+    if (currentMillis - previousMillis2 >= interval2) {
+      digitalWrite(ledG2, LOW); // Apaga o verde
+      led2On = false;
+    }
+  }
+
+  // Controle do terceiro par
+  if (pirState3 == HIGH && !led3On) {
+    digitalWrite(ledR3, LOW);  // Apaga o vermelho
+    led3On = true;
+    previousMillis3 = currentMillis;
+    blinkMillis3 = currentMillis;
+    blinkCount3 = 0; // Reinicia o contador de piscadas
+    digitalWrite(ledR1, HIGH); // Liga vermelho no próximo par
+  }
+
+  if (led3On) {
+    // Piscar o LED verde do terceiro par
+    if (currentMillis - blinkMillis3 >= blinkInterval && blinkCount3 < interval3 / blinkInterval) {
+      blinkMillis3 = currentMillis;
+      led3BlinkState = !led3BlinkState;
+      digitalWrite(ledG3, led3BlinkState ? HIGH : LOW);
+      blinkCount3++;
+    }
+    // Desligar após o intervalo total
+    if (currentMillis - previousMillis3 >= interval3) {
+      digitalWrite(ledG3, LOW); // Apaga o verde
+      led3On = false;
+    }
+  }
+}
