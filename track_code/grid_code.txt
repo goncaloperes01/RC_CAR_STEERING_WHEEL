@@ -1,0 +1,47 @@
+// Definição dos pinos
+const int ledVermelho = 13; // LED vermelho
+const int ledAmarelo = 12;  // LED amarelo
+const int ledVerde = 11;    // LED verde
+const int buzzer = 10;      // Buzzer
+
+void setup() {
+  // Configura os pinos como saídas
+  pinMode(ledVermelho, OUTPUT);
+  pinMode(ledAmarelo, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+}
+
+void loop() {
+  // LED vermelho ligado com "bip"
+  digitalWrite(ledVermelho, HIGH);
+  beep(1000, 200); // Frequência: 1000 Hz, duração: 200 ms
+  delay(1000);
+  digitalWrite(ledVermelho, LOW);
+
+  // LED amarelo piscando 3 vezes com "bip" a cada piscar
+  beep(1000, 200); // "Bip" ao mudar do vermelho para o amarelo
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(ledAmarelo, HIGH);
+    beep(1000, 200); // "Bip" a cada piscar
+    delay(500);
+    digitalWrite(ledAmarelo, LOW);
+    delay(500);
+  }
+
+  // LED verde ligado com "bip" mais agudo e longo
+  digitalWrite(ledVerde, HIGH);
+  beep(1500, 600); // Frequência: 1500 Hz, duração: 350 ms
+  delay(5000);
+  digitalWrite(ledVerde, LOW);
+
+  // Espera antes de reiniciar o ciclo
+  delay(2000);
+}
+
+// Função para tocar o buzzer
+void beep(int frequency, int duration) {
+  tone(buzzer, frequency); // Define a frequência do som
+  delay(duration);         // Duração do som
+  noTone(buzzer);          // Para o som
+}
