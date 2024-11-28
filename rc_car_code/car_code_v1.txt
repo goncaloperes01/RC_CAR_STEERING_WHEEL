@@ -1,0 +1,61 @@
+#include <Servo.h>
+
+// Define os pinos dos motores
+const int motorFrenteEsquerdo = 4;  // Motor frente-esquerdo
+const int motorFrenteDireito = 3;   // Motor frente-direito
+const int motorTrasEsquerdo = 6;    // Motor traseiro-esquerdo
+const int motorTrasDireito = 5;    // Motor traseiro-direito
+
+// Variáveis para os comandos
+float direcao = 0.0;   // Direção do volante (-1 a 1)
+float movimento = 0.0; // Movimento do carro (-1 a 1)
+
+void setup() {
+  Serial.begin(9600); // Inicia a comunicação serial
+
+  // Define os pinos dos motores como saída
+  pinMode(motorFrenteEsquerdo, OUTPUT);
+  pinMode(motorFrenteDireito, OUTPUT);
+  pinMode(motorTrasEsquerdo, OUTPUT);
+  pinMode(motorTrasDireito, OUTPUT);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    // Lê os dados no formato "direcao,movimento"
+    String data = Serial.readStringUntil('\n');
+    int separatorIndex = data.indexOf(',');
+    if (separatorIndex > 0) {
+      direcao = data.substring(0, separatorIndex).toFloat();
+      movimento = data.substring(separatorIndex + 1).toFloat();
+
+      // Exibe os valores recebidos 
+      Serial.print("Direção: ");
+      Serial.print(direcao);
+      Serial.print(" Movimento: ");
+      Serial.println(movimento);
+
+      // Controla os motores
+      controlarMotores(direcao, movimento);
+    }
+  }
+}
+
+// Função para controlar os motores
+void controlarMotores(float direcao, float movimento) {  
+  // Calcula a velocidade dos lados esquerdo e direito
+  int velocidadeEsquerda = movimento * (1 - direcao); // Reduz a velocidade com base na direção
+  int velocidadeDireita = movimento * (1 + direcao); // Aumenta a velocidade com base na direção
+
+  // Converte os valores para a faixa de 0 a 255
+  int pwmEsquerda = map(velocidadeEsquerda * 255, -255, 255, 0, 255);
+  int pwmDireita = map(velocidadeDireita * 255, -255, 255, 0, 255);
+
+  // Controla os motores da frente
+  analogWrite(motorFrenteEsquerdo, max(0, pwmEsquerda));
+  analogWrite(motorFrenteDireito, max(0, pwmDireita));
+
+  // Controla os motores traseiros
+  analogWrite(motorTrasEsquerdo, max(0, pwmEsquerda));
+  analogWrite(motorTrasDireito, max(0, pwmDireita));
+}
