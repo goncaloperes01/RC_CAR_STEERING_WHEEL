@@ -1,10 +1,10 @@
 #include <LiquidCrystal.h>
 
 // Definindo os pinos do LCD
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal lcd(12, 11, 10, 9, 8, 7);
 
 // Definindo o pino do sensor PIR
-int pirPin = 7;
+int pirPin = 6;
 
 // Variáveis de controle
 unsigned long startTime;
