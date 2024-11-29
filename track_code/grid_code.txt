@@ -1,8 +1,8 @@
 // Definição dos pinos
-const int ledVermelho = 13; // LED vermelho
-const int ledAmarelo = 12;  // LED amarelo
-const int ledVerde = 11;    // LED verde
-const int buzzer = 10;      // Buzzer
+const int ledVermelho = 4; // LED vermelho
+const int ledAmarelo = 3;  // LED amarelo
+const int ledVerde = 2;    // LED verde
+const int buzzer = 5;      // Buzzer
 
 void setup() {
   // Configura os pinos como saídas
