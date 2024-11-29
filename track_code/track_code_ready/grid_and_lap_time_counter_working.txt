@@ -1,0 +1,159 @@
+#include <LiquidCrystal.h>
+
+// Definindo os pinos do LCD
+LiquidCrystal lcd(12, 11, 10, 9, 8, 7);
+
+// Definição dos pinos
+const int ledVermelho = 4; // LED vermelho
+const int ledAmarelo = 3;  // LED amarelo
+const int ledVerde = 2;    // LED verde
+const int buzzer = 5;      // Buzzer
+const int pirPin = 6;      // Sensor PIR
+
+// Variáveis de controle
+unsigned long startTime;
+unsigned long currentTime;
+bool movimentoDetectado = false;
+int voltaAtual = 1;
+int ultimaVolta = 0;
+unsigned long ultimaVoltaTempo = 0;
+bool aguardandoMovimento = false;
+bool semaforoConcluido = false;
+
+// Função para tocar o buzzer
+void beep(int frequency, int duration) {
+  tone(buzzer, frequency); // Define a frequência do som
+  delay(duration);         // Duração do som
+  noTone(buzzer);          // Para o som
+}
+
+// Função para exibir tempo formatado no LCD
+void exibirTempo(unsigned long tempo) {
+  int minutos = (tempo / 60000);
+  int segundos = (tempo % 60000) / 1000;
+  int milissegundos = (tempo % 1000) / 10;
+
+  if (minutos < 10) lcd.print("0");
+  lcd.print(minutos);
+  lcd.print(":");
+
+  if (segundos < 10) lcd.print("0");
+  lcd.print(segundos);
+  lcd.print(":");
+
+  if (milissegundos < 10) lcd.print("0");
+  lcd.print(milissegundos);
+}
+
+void setup() {
+  // Configuração dos pinos
+  pinMode(ledVermelho, OUTPUT);
+  pinMode(ledAmarelo, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(pirPin, INPUT);
+
+  // Inicializa o LCD
+  lcd.begin(16, 2);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Aguarde...");
+}
+
+void loop() {
+  int movimento = digitalRead(pirPin);
+
+  // Sequência do semáforo (executa apenas uma vez)
+  if (!semaforoConcluido && !aguardandoMovimento) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Preparar...");
+    delay(1000);
+
+    digitalWrite(ledVermelho, HIGH);
+    beep(1000, 200);
+    delay(1000);
+    digitalWrite(ledVermelho, LOW);
+
+    beep(1000, 200);
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(ledAmarelo, HIGH);
+      beep(1000, 200);
+      delay(500);
+      digitalWrite(ledAmarelo, LOW);
+      delay(500);
+
+      // Verifica se o sensor PIR detecta movimento durante a sequência
+      if (digitalRead(pirPin) == HIGH) {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Volta invalida!");
+        delay(2000);
+
+        // Reinicia o semáforo
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Preparar...");
+        return; // Reinicia o loop
+      }
+    }
+
+    // Luz verde acende, pronto para detecção de movimento
+    digitalWrite(ledVerde, HIGH);
+    beep(1500, 600);
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Pronto!");
+    aguardandoMovimento = true; // Agora o sensor PIR começa a contar voltas
+    semaforoConcluido = true;  // Marca o semáforo como concluído
+  }
+
+  // Aguardar movimento para iniciar a contagem de voltas
+  if (aguardandoMovimento && movimento == HIGH) {
+    aguardandoMovimento = false;
+
+    // Inicia o tempo para a contagem de voltas
+    startTime = millis();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Volta: 0 - 0:0:0");
+    lcd.setCursor(0, 1);
+    lcd.print("Atual: 0 - 0:0:0");
+  }
+
+  // Lógica do circuito de voltas
+  if (!aguardandoMovimento && movimento == HIGH && !movimentoDetectado) {
+    movimentoDetectado = true;
+
+    // Salva os dados da última volta
+    ultimaVolta = voltaAtual;
+    ultimaVoltaTempo = currentTime - startTime;
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Volta: ");
+    lcd.print(ultimaVolta);
+    lcd.print(" - ");
+    exibirTempo(ultimaVoltaTempo);
+
+    // Reinicia para a próxima volta
+    startTime = millis();
+    voltaAtual++;
+  } else if (movimento == LOW) {
+    movimentoDetectado = false;
+  }
+
+  // Atualiza o tempo atual no LCD
+  if (!aguardandoMovimento) {
+    currentTime = millis();
+    unsigned long tempoAtualVolta = currentTime - startTime;
+    lcd.setCursor(0, 1);
+    lcd.print("Atual: ");
+    lcd.print(voltaAtual);
+    lcd.print(" - ");
+    exibirTempo(tempoAtualVolta);
+  }
+
+  delay(100);
+}
