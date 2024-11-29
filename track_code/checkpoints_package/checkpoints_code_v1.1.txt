@@ -1,0 +1,152 @@
+// Definindo os pinos para os LEDs RGB (compartilhados entre os pares de LEDs)
+const int ledR1 = 22;  // Pino vermelho do primeiro par
+const int ledG1 = 32;  // Pino verde do primeiro par
+
+const int ledR2 = 24;  // Pino vermelho do segundo par
+const int ledG2 = 34;  // Pino verde do segundo par
+
+const int ledR3 = 26;  // Pino vermelho do terceiro par
+const int ledG3 = 36;  // Pino verde do terceiro par
+
+const int ledR4 = 28;  // Pino vermelho do quarto par
+const int ledG4 = 38;  // Pino verde do quarto par
+
+const int ledR5 = 30;  // Pino vermelho do quinto par
+const int ledG5 = 40;  // Pino verde do quinto par
+
+// Pinos dos sensores PIR
+const int pirPin1 = 42; // Sensor PIR do primeiro par
+const int pirPin2 = 44; // Sensor PIR do segundo par
+const int pirPin3 = 46; // Sensor PIR do terceiro par
+const int pirPin4 = 48; // Sensor PIR do quarto par
+const int pirPin5 = 50; // Sensor PIR do quinto par
+
+// Variáveis para controle de tempo
+unsigned long previousMillis1 = 0;
+unsigned long previousMillis2 = 0;
+unsigned long previousMillis3 = 0;
+unsigned long previousMillis4 = 0;
+unsigned long previousMillis5 = 0;
+
+unsigned long blinkMillis1 = 0;
+unsigned long blinkMillis2 = 0;
+unsigned long blinkMillis3 = 0;
+unsigned long blinkMillis4 = 0;
+unsigned long blinkMillis5 = 0;
+
+const unsigned long interval1 = 2000; // Tempo total do primeiro par
+const unsigned long interval2 = 2000; // Tempo total do segundo par
+const unsigned long interval3 = 3000; // Tempo total do terceiro par
+const unsigned long interval4 = 2500; // Tempo total do quarto par
+const unsigned long interval5 = 2500; // Tempo total do quinto par
+const unsigned long blinkInterval = 250; // Tempo de piscar (250 ms)
+
+// Estados dos LEDs e contadores de piscadas
+bool led1On = false;
+bool led2On = false;
+bool led3On = false;
+bool led4On = false;
+bool led5On = false;
+
+bool led1BlinkState = false;
+bool led2BlinkState = false;
+bool led3BlinkState = false;
+bool led4BlinkState = false;
+bool led5BlinkState = false;
+
+bool nextLedStarted = false; // Flag para controle do próximo LED
+
+int blinkCount1 = 0;
+int blinkCount2 = 0;
+int blinkCount3 = 0;
+int blinkCount4 = 0;
+int blinkCount5 = 0;
+
+void setup() {
+  // Configura os pinos dos LEDs como saídas
+  pinMode(ledR1, OUTPUT);
+  pinMode(ledG1, OUTPUT);
+  pinMode(ledR2, OUTPUT);
+  pinMode(ledG2, OUTPUT);
+  pinMode(ledR3, OUTPUT);
+  pinMode(ledG3, OUTPUT);
+  pinMode(ledR4, OUTPUT);
+  pinMode(ledG4, OUTPUT);
+  pinMode(ledR5, OUTPUT);
+  pinMode(ledG5, OUTPUT);
+
+  // Configura os pinos dos sensores PIR como entradas
+  pinMode(pirPin1, INPUT);
+  pinMode(pirPin2, INPUT);
+  pinMode(pirPin3, INPUT);
+  pinMode(pirPin4, INPUT);
+  pinMode(pirPin5, INPUT);
+
+  // Inicializa os LEDs com a cor vermelha apenas no primeiro par
+  digitalWrite(ledR1, HIGH);
+  digitalWrite(ledG1, LOW);
+
+  // Os outros pares começam apagados
+  digitalWrite(ledR2, LOW);
+  digitalWrite(ledG2, LOW);
+  digitalWrite(ledR3, LOW);
+  digitalWrite(ledG3, LOW);
+  digitalWrite(ledR4, LOW);
+  digitalWrite(ledG4, LOW);
+  digitalWrite(ledR5, LOW);
+  digitalWrite(ledG5, LOW);
+}
+
+void loop() {
+  // Lê o valor dos sensores PIR
+  int pirState1 = digitalRead(pirPin1);
+  int pirState2 = digitalRead(pirPin2);
+  int pirState3 = digitalRead(pirPin3);
+  int pirState4 = digitalRead(pirPin4);
+  int pirState5 = digitalRead(pirPin5);
+
+  unsigned long currentMillis = millis();
+
+  // Controle do primeiro par
+  handleLed(pirState1, ledR1, ledG1, &led1On, &previousMillis1, &blinkMillis1, &blinkCount1, &led1BlinkState, interval1, currentMillis, ledR2, &led2On);
+  // Controle do segundo par
+  handleLed(pirState2, ledR2, ledG2, &led2On, &previousMillis2, &blinkMillis2, &blinkCount2, &led2BlinkState, interval2, currentMillis, ledR3, &led3On);
+  // Controle do terceiro par
+  handleLed(pirState3, ledR3, ledG3, &led3On, &previousMillis3, &blinkMillis3, &blinkCount3, &led3BlinkState, interval3, currentMillis, ledR4, &led4On);
+  // Controle do quarto par
+  handleLed(pirState4, ledR4, ledG4, &led4On, &previousMillis4, &blinkMillis4, &blinkCount4, &led4BlinkState, interval4, currentMillis, ledR5, &led5On);
+  // Controle do quinto par (ativa o primeiro no loop)
+  handleLed(pirState5, ledR5, ledG5, &led5On, &previousMillis5, &blinkMillis5, &blinkCount5, &led5BlinkState, interval5, currentMillis, ledR1, &led1On);
+}
+
+// Função genérica para controle dos LEDs, com ativação do próximo par
+void handleLed(int pirState, int ledR, int ledG, bool *ledOn, unsigned long *previousMillis, unsigned long *blinkMillis, int *blinkCount, bool *blinkState, unsigned long interval, unsigned long currentMillis, int nextLedR, bool *nextLedOn) {
+  if (pirState == HIGH && !(*ledOn)) {
+    digitalWrite(ledR, LOW);  // Apaga o vermelho
+    *ledOn = true;
+    *previousMillis = currentMillis;
+    *blinkMillis = currentMillis;
+    *blinkCount = 0; // Reinicia o contador de piscadas
+
+    // Ativa o próximo par imediatamente
+    if (nextLedOn != NULL && !(*nextLedOn)) {
+      *nextLedOn = true;
+      digitalWrite(nextLedR, HIGH); // Liga o vermelho do próximo par
+    }
+  }
+
+  if (*ledOn) {
+    // Piscar o LED verde
+    if (currentMillis - *blinkMillis >= blinkInterval && *blinkCount < interval / blinkInterval) {
+      *blinkMillis = currentMillis;
+      *blinkState = !(*blinkState);
+      digitalWrite(ledG, *blinkState ? HIGH : LOW);
+      (*blinkCount)++;
+    }
+    // Desligar após o intervalo total
+    if (currentMillis - *previousMillis >= interval) {
+      digitalWrite(ledG, LOW); // Apaga o verde
+      *ledOn = false;
+    }
+  }
+}
