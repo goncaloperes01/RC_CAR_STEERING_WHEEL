@@ -1,0 +1,231 @@
+#include <LiquidCrystal.h>
+
+// Definindo os pinos do LCD
+LiquidCrystal lcd(12, 11, 10, 9, 8, 7);
+
+// Definição dos pinos para o semáforo
+const int ledVermelho = 4; // LED vermelho
+const int ledAmarelo = 3;  // LED amarelo
+const int ledVerde = 2;    // LED verde
+const int buzzer = 5;      // Buzzer
+const int pirPin = 6;      // Sensor PIR
+const int startButton = 23; // Botão START
+
+// Definição dos pinos para os LEDs RGB (checkpoints)
+const int ledR[5] = {22, 24, 26, 28, 30}; // Pinos vermelhos dos LEDs RGB
+const int ledG[5] = {32, 34, 36, 38, 40}; // Pinos verdes dos LEDs RGB
+const int pirPins[5] = {42, 44, 46, 48, 50}; // Pinos dos sensores PIR
+
+// Variáveis de controle do semáforo
+unsigned long startTime;
+unsigned long currentTime;
+bool movimentoDetectado = false;
+int voltaAtual = 1;
+int ultimaVolta = 0;
+unsigned long ultimaVoltaTempo = 0;
+bool aguardandoMovimento = false;
+bool semaforoConcluido = false;
+bool startPressed = false;
+
+// Variáveis de controle dos checkpoints
+unsigned long previousMillis[5] = {0};
+unsigned long blinkMillis[5] = {0};
+bool ledOn[5] = {false};
+bool ledBlinkState[5] = {false};
+int blinkCount[5] = {0};
+const unsigned long intervals[5] = {2000, 2000, 3000, 2500, 2500};
+const unsigned long blinkInterval = 250;
+
+void beep(int frequency, int duration) {
+  tone(buzzer, frequency);
+  delay(duration);
+  noTone(buzzer);
+}
+
+void exibirTempo(unsigned long tempo) {
+  int minutos = (tempo / 60000);
+  int segundos = (tempo % 60000) / 1000;
+  int milissegundos = (tempo % 1000) / 10;
+
+  if (minutos < 10) lcd.print("0");
+  lcd.print(minutos);
+  lcd.print(":");
+
+  if (segundos < 10) lcd.print("0");
+  lcd.print(segundos);
+  lcd.print(":");
+
+  if (milissegundos < 10) lcd.print("0");
+  lcd.print(milissegundos);
+}
+
+void resetSistema() {
+  movimentoDetectado = false;
+  voltaAtual = 1;
+  ultimaVolta = 0;
+  ultimaVoltaTempo = 0;
+  aguardandoMovimento = false;
+  semaforoConcluido = false;
+  startPressed = false;
+
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(ledR[i], LOW); // Apaga LEDs vermelhos
+    digitalWrite(ledG[i], LOW); // Apaga LEDs verdes
+    ledOn[i] = false;
+    blinkCount[i] = 0;
+  }
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Carregar START");
+}
+
+void setup() {
+  pinMode(ledVermelho, OUTPUT);
+  pinMode(ledAmarelo, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(pirPin, INPUT);
+  pinMode(startButton, INPUT_PULLUP);
+
+  // Configura LEDs e sensores dos checkpoints
+  for (int i = 0; i < 5; i++) {
+    pinMode(ledR[i], OUTPUT); // LEDs vermelhos
+    pinMode(ledG[i], OUTPUT); // LEDs verdes
+    pinMode(pirPins[i], INPUT);  // Sensores PIR
+  }
+
+  lcd.begin(16, 2);
+  resetSistema();
+}
+
+void loop() {
+  if (digitalRead(startButton) == LOW) {
+    delay(200);
+    if (!startPressed) {
+      startPressed = true;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Preparar...");
+      delay(1000);
+    } else {
+      resetSistema();
+      return;
+    }
+  }
+
+  if (!startPressed) return;
+
+  int movimento = digitalRead(pirPin);
+
+  if (!semaforoConcluido && !aguardandoMovimento) {
+    digitalWrite(ledVermelho, HIGH);
+    beep(1000, 200);
+    delay(1000);
+    digitalWrite(ledVermelho, LOW);
+
+    beep(1000, 200);
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(ledAmarelo, HIGH);
+      beep(1000, 200);
+      delay(500);
+      digitalWrite(ledAmarelo, LOW);
+      delay(500);
+
+      if (digitalRead(pirPin) == HIGH) {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Volta invalida!");
+        delay(2000);
+        resetSistema();
+        return;
+      }
+    }
+
+    digitalWrite(ledVerde, HIGH);
+    beep(1500, 600);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Pronto!");
+    delay(3000);
+    digitalWrite(ledVerde, LOW);
+
+    aguardandoMovimento = true;
+    semaforoConcluido = true;
+
+    // Ativa o primeiro checkpoint
+    digitalWrite(ledR[0], HIGH);
+  }
+
+  if (aguardandoMovimento && movimento == HIGH) {
+    aguardandoMovimento = false;
+    startTime = millis();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Volta: 0 - 0:0:0");
+    lcd.setCursor(0, 1);
+    lcd.print("Atual: 0 - 0:0:0");
+    movimentoDetectado = true;
+  }
+
+  if (!aguardandoMovimento && movimento == HIGH && !movimentoDetectado) {
+    movimentoDetectado = true;
+    ultimaVolta = voltaAtual;
+    ultimaVoltaTempo = currentTime - startTime;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Volta: ");
+    lcd.print(ultimaVolta);
+    lcd.print(" - ");
+    exibirTempo(ultimaVoltaTempo);
+
+    startTime = millis();
+    voltaAtual++;
+  } else if (movimento == LOW) {
+    movimentoDetectado = false;
+  }
+
+  if (!aguardandoMovimento) {
+    currentTime = millis();
+    unsigned long tempoAtualVolta = currentTime - startTime;
+    lcd.setCursor(0, 1);
+    lcd.print("Atual: ");
+    lcd.print(voltaAtual);
+    lcd.print(" - ");
+    exibirTempo(tempoAtualVolta);
+  }
+
+  // Controle dos checkpoints
+  unsigned long currentMillis = millis();
+  for (int i = 0; i < 5; i++) {
+    int pirState = digitalRead(pirPins[i]);
+    if (pirState == HIGH && !ledOn[i]) {
+      digitalWrite(ledR[i], LOW);  // Apaga o vermelho imediatamente
+      digitalWrite(ledG[i], HIGH); // Liga o verde para piscar
+      ledOn[i] = true;
+      previousMillis[i] = currentMillis;
+      blinkMillis[i] = currentMillis;
+      blinkCount[i] = 0;
+
+      // Ativa o próximo LED no ciclo
+      int nextIndex = (i + 1) % 5;
+      digitalWrite(ledR[nextIndex], HIGH);
+    }
+
+    if (ledOn[i]) {
+      if (currentMillis - blinkMillis[i] >= blinkInterval && blinkCount[i] < intervals[i] / blinkInterval) {
+        blinkMillis[i] = currentMillis;
+        ledBlinkState[i] = !ledBlinkState[i];
+        digitalWrite(ledG[i], ledBlinkState[i] ? HIGH : LOW);
+        blinkCount[i]++;
+      }
+
+      if (currentMillis - previousMillis[i] >= intervals[i]) {
+        digitalWrite(ledG[i], LOW);
+        ledOn[i] = false;
+      }
+    }
+  }
+
+  delay(50);
+}
