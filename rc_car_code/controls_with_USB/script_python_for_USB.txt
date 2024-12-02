@@ -1,0 +1,46 @@
+import pygame
+import serial
+import time
+
+# Inicializa o pygame e os módulos de joystick
+pygame.init()
+pygame.joystick.init()
+
+# Conecta-se à porta serial (ajuste o COMx de acordo com a sua porta)
+arduino = serial.Serial('COM6', 9600)  # Substitua COM6 pela porta correta
+time.sleep(2)  # Aguarda para garantir que a conexão com o Arduino seja estabelecida
+
+# Verifica dispositivos conectados
+joysticks = pygame.joystick.get_count()
+if joysticks == 0:
+    print("Nenhum volante ou joystick conectado.")
+else:
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
+    print(f"Dispositivo conectado: {joystick.get_name()}")
+
+    # Loop para capturar os dados e enviar para o Arduino
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        # Captura os valores dos eixos
+        direcao = joystick.get_axis(0)  # Eixo do volante
+        acelerador = (joystick.get_axis(5) + 1) / 2  # Normaliza de -1 a 1 para 0 a 1
+        freio = (joystick.get_axis(4) + 1) / 2  # Normaliza de -1 a 1 para 0 a 1
+
+        # Calcula o movimento total (acelerador menos freio)
+        movimento = acelerador - freio  # Resultado vai de -1 (recuo) a 1 (avanço)
+
+        # Exibe os valores no terminal
+        print(f"Direção: {direcao:.2f}, Movimento: {movimento:.2f}")
+
+        # Envia os dados para o Arduino
+        arduino.write(f"{direcao:.2f},{movimento:.2f}\n".encode())
+        time.sleep(0.1)
+
+# Finaliza o programa
+arduino.close()
+pygame.quit()

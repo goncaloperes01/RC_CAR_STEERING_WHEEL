@@ -1,0 +1,100 @@
+#define MOTOR_DIRECTION     0 // Se o sentido for invertido, mude para 1
+#define PIN_DIRECTION_RIGHT 3
+#define PIN_DIRECTION_LEFT  4
+#define PIN_MOTOR_PWM_RIGHT 5
+#define PIN_MOTOR_PWM_LEFT  6
+
+// Variáveis para os comandos
+float direcao = 0.0;   // Direção do volante (-1 a 1)
+float movimento = 0.0; // Movimento do carro (-1 a 1)
+
+void setup() {
+  Serial.begin(9600); // Inicia a comunicação serial
+
+  // Define os pinos dos motores como saída
+  pinMode(PIN_DIRECTION_LEFT, OUTPUT);
+  pinMode(PIN_MOTOR_PWM_LEFT, OUTPUT);
+  pinMode(PIN_DIRECTION_RIGHT, OUTPUT);
+  pinMode(PIN_MOTOR_PWM_RIGHT, OUTPUT);
+
+  // Garante que os motores estejam parados inicialmente
+  motorRun(0, 0);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    // Lê os dados recebidos no formato "direcao,movimento"
+    String data = Serial.readStringUntil('\n');
+    int separatorIndex = data.indexOf(',');
+    if (separatorIndex > 0) {
+      direcao = data.substring(0, separatorIndex).toFloat();
+      movimento = data.substring(separatorIndex + 1).toFloat();
+
+      // Exibe os valores recebidos para depuração
+      Serial.print("Direção: ");
+      Serial.print(direcao);
+      Serial.print(" Movimento: ");
+      Serial.println(movimento);
+
+      // Controla os motores com base nos valores recebidos
+      controlarMotores(direcao, movimento);
+    }
+  }
+}
+
+// Função para controlar os motores
+void controlarMotores(float direcao, float movimento) {
+  // Garante que o carro pare completamente se o movimento for zero
+  if (abs(movimento) < 0.05) {
+    motorRun(0, 0);
+    return;
+  }
+
+  // Calcula as velocidades básicas dos motores esquerdo e direito
+  int velocidadeBase = map(abs(movimento) * 255, 0, 1, 0, 255);
+  int velocidadeEsquerda = velocidadeBase;
+  int velocidadeDireita = velocidadeBase;
+
+  // Ajusta velocidades para virar
+  if (direcao > 0) {
+    velocidadeEsquerda = velocidadeBase;                // Lado esquerdo mantém velocidade
+    velocidadeDireita = velocidadeBase * (1 - direcao); // Lado direito reduz a velocidade
+  } else if (direcao < 0) {
+    velocidadeDireita = velocidadeBase;                // Lado direito mantém velocidade
+    velocidadeEsquerda = velocidadeBase * (1 + direcao); // Lado esquerdo reduz a velocidade
+  }
+
+  // Aplica os sinais para frente ou para trás
+  if (movimento > 0) {
+    motorRun(velocidadeEsquerda, velocidadeDireita); // Andar para frente
+  } else {
+    motorRun(-velocidadeEsquerda, -velocidadeDireita); // Andar para trás
+  }
+}
+
+// Função para controlar os motores de ambos os lados
+void motorRun(int speedl, int speedr) {
+  int dirL = 0, dirR = 0;
+
+  // Define direção do lado esquerdo
+  if (speedl > 0) {
+    dirL = 0 ^ MOTOR_DIRECTION;
+  } else {
+    dirL = 1 ^ MOTOR_DIRECTION;
+    speedl = -speedl;
+  }
+
+  // Define direção do lado direito
+  if (speedr > 0) {
+    dirR = 1 ^ MOTOR_DIRECTION;
+  } else {
+    dirR = 0 ^ MOTOR_DIRECTION;
+    speedr = -speedr;
+  }
+
+  // Aplica as direções e velocidades
+  digitalWrite(PIN_DIRECTION_LEFT, dirL);
+  digitalWrite(PIN_DIRECTION_RIGHT, dirR);
+  analogWrite(PIN_MOTOR_PWM_LEFT, speedl);
+  analogWrite(PIN_MOTOR_PWM_RIGHT, speedr);
+}
