@@ -1,0 +1,308 @@
+#include <LiquidCrystal_I2C.h>
+
+// Inicialize o LCD com endereço I2C e dimensões (16x2)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Definição dos pinos para os LEDs RGB do semáforo
+const int semaforoVermelho = 25;
+const int semaforoAmareloR = 27;
+const int semaforoAmareloG = 29;
+const int semaforoVerde = 31;
+const int buzzer = 5;
+const int pirMeta = 6;
+const int botaoInicio = 23; // Botão para iniciar, pausar e reiniciar o semáforo
+const int botaoPagina = 4;  // Botão para alternar entre páginas no LCD
+
+// Definição dos pinos para os LEDs RGB (checkpoints)
+const int ledR[3] = {22, 24, 26};
+const int ledG[3] = {32, 34, 36};
+const int pirPins[3] = {42, 44, 46};
+
+// Variáveis de controle do semáforo
+unsigned long startTime;
+unsigned long currentTime;
+bool movimentoMeta = false;
+int voltaAtual = 1;
+unsigned long ultimaVoltaTempo = 0;
+unsigned long tempoTotal = 0;
+unsigned long melhorVoltaTempo = 0;
+bool paginaAlternada = false;
+bool cicloSemaforoInicial = true;
+bool aguardandoMeta = false;
+
+// Controle dos checkpoints
+bool ledOn[3] = {false};
+bool aguardandoCheckpoint[3] = {false};
+
+// Controle do sistema
+enum Estado { AGUARDANDO, INICIADO, PAUSADO };
+Estado estadoSistema = AGUARDANDO;
+
+unsigned long ultimaLeituraBotao = 0;
+const unsigned long debounceDelay = 200;
+
+// Funções auxiliares
+void beep(int frequency, int duration) {
+  tone(buzzer, frequency);
+  delay(duration);
+  noTone(buzzer);
+}
+
+void exibirTempo(unsigned long tempo) {
+  int minutos = tempo / 60000;
+  int segundos = (tempo % 60000) / 1000;
+  int milissegundos = (tempo % 1000) / 10;
+
+  if (minutos < 10) lcd.print("0");
+  lcd.print(minutos);
+  lcd.print(":");
+
+  if (segundos < 10) lcd.print("0");
+  lcd.print(segundos);
+  lcd.print(":");
+
+  if (milissegundos < 10) lcd.print("0");
+  lcd.print(milissegundos);
+}
+
+void resetCheckpoints() {
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(ledR[i], LOW);
+    digitalWrite(ledG[i], LOW);
+    ledOn[i] = false;
+    aguardandoCheckpoint[i] = false;
+  }
+  digitalWrite(ledR[0], HIGH); // Ativa o 1º checkpoint
+  aguardandoCheckpoint[0] = true;
+}
+
+void controlaSemaforo() {
+  // Sequência do semáforo
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Aguardando...");
+
+  // Fase vermelha
+  digitalWrite(semaforoVermelho, HIGH);
+  beep(300, 500); // Som grave longo
+  delay(200);
+
+  for (int i = 0; i < 6; i++) {
+    delay(50);
+    if (digitalRead(pirMeta) == HIGH) {
+      // Movimento detectado antes da luz verde
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Volta Invalida");
+      digitalWrite(semaforoVermelho, LOW);
+      delay(3000); // Mostra a mensagem por 3 segundos
+      controlaSemaforo(); // Reinicia o semáforo
+      return; // Sai da função para reiniciar corretamente
+    }
+  }
+
+  digitalWrite(semaforoVermelho, LOW);
+
+  // Fase amarela
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(semaforoAmareloR, HIGH);
+    digitalWrite(semaforoAmareloG, HIGH);
+    beep(600, 250); // Som médio curto
+    delay(250);
+    digitalWrite(semaforoAmareloR, LOW);
+    digitalWrite(semaforoAmareloG, LOW);
+    delay(250);
+    if (digitalRead(pirMeta) == HIGH) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Volta Invalida");
+      delay(3000);
+      controlaSemaforo();
+      return;
+    }
+  }
+
+  // Fase verde
+  digitalWrite(semaforoVerde, HIGH);
+  beep(2500, 750); // Som agudo longo
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("GO!");
+
+  startTime = millis(); // Inicia o tempo quando a luz verde acende
+  delay(2000);
+  digitalWrite(semaforoVerde, LOW);
+}
+
+void controlaCheckpoints() {
+  for (int i = 0; i < 3; i++) {
+    if (aguardandoCheckpoint[i] && digitalRead(pirPins[i]) == HIGH) {
+      beep(5000, 100);
+      delay(50);
+      beep(5000, 100);
+      digitalWrite(ledR[i], LOW);
+
+      if (i < 2) {
+        digitalWrite(ledR[i + 1], HIGH);
+        aguardandoCheckpoint[i + 1] = true;
+      } else {
+        aguardandoMeta = true;
+        digitalWrite(semaforoVermelho, HIGH);
+      }
+
+      for (int j = 0; j < 8; j++) {
+        digitalWrite(ledG[i], HIGH);
+        delay(125);
+        digitalWrite(ledG[i], LOW);
+        delay(125);
+      }
+
+      aguardandoCheckpoint[i] = false;
+    }
+  }
+}
+
+void controlaMeta() {
+  if (aguardandoMeta && digitalRead(pirMeta) == HIGH) {
+    beep(5000, 100);
+    delay(50);
+    beep(5000, 100);
+    digitalWrite(semaforoVermelho, LOW);
+    digitalWrite(semaforoVerde, HIGH);
+    delay(1000);
+    digitalWrite(semaforoVerde, LOW);
+
+    ultimaVoltaTempo = millis() - startTime;
+    tempoTotal += ultimaVoltaTempo;
+
+    if (melhorVoltaTempo == 0 || ultimaVoltaTempo < melhorVoltaTempo) {
+      melhorVoltaTempo = ultimaVoltaTempo;
+    }
+
+    lcd.setCursor(0, 0);
+    lcd.print("Volta: ");
+    lcd.print(voltaAtual);
+    lcd.print(" - ");
+    exibirTempo(ultimaVoltaTempo);
+
+    voltaAtual++;
+    aguardandoMeta = false;
+
+    digitalWrite(semaforoVermelho, LOW);
+    resetCheckpoints();
+
+    if (cicloSemaforoInicial) {
+      cicloSemaforoInicial = false;
+    }
+
+    startTime = millis();
+  }
+}
+
+void alternarPagina() {
+  static unsigned long ultimaLeitura = 0;
+  if (digitalRead(botaoPagina) == HIGH && millis() - ultimaLeitura > 200) {
+    paginaAlternada = !paginaAlternada;
+    ultimaLeitura = millis();
+  }
+}
+
+void exibirLCD() {
+  static bool ultimaPaginaAlternada = false;
+  static unsigned long ultimaAtualizacao = 0;
+  const unsigned long intervaloAtualizacao = 200;
+
+  if (millis() - ultimaAtualizacao < intervaloAtualizacao && ultimaPaginaAlternada == paginaAlternada) {
+    return;
+  }
+
+  ultimaAtualizacao = millis();
+  ultimaPaginaAlternada = paginaAlternada;
+
+  if (paginaAlternada) {
+    lcd.setCursor(0, 0);
+    lcd.print("Total: ");
+    exibirTempo(tempoTotal);
+    lcd.setCursor(0, 1);
+    lcd.print("Melhor: ");
+    exibirTempo(melhorVoltaTempo);
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print("Volta ");
+    lcd.print(voltaAtual - 1);
+    lcd.print(": ");
+    exibirTempo(ultimaVoltaTempo);
+    lcd.setCursor(0, 1);
+    lcd.print("Atual: ");
+    exibirTempo(millis() - startTime);
+  }
+}
+
+void setup() {
+  lcd.init();
+  lcd.backlight();
+
+  pinMode(semaforoVermelho, OUTPUT);
+  pinMode(semaforoAmareloR, OUTPUT);
+  pinMode(semaforoAmareloG, OUTPUT);
+  pinMode(semaforoVerde, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(pirMeta, INPUT);
+  pinMode(botaoInicio, INPUT);
+  pinMode(botaoPagina, INPUT);
+
+  for (int i = 0; i < 3; i++) {
+    pinMode(ledR[i], OUTPUT);
+    pinMode(ledG[i], OUTPUT);
+    pinMode(pirPins[i], INPUT);
+  }
+
+  resetCheckpoints();
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Pressione o botao");
+  lcd.setCursor(0, 1);
+  lcd.print("para iniciar");
+}
+
+void loop() {
+  if (digitalRead(botaoInicio) == HIGH && millis() - ultimaLeituraBotao > debounceDelay) {
+    ultimaLeituraBotao = millis();
+
+    if (estadoSistema == AGUARDANDO) {
+      estadoSistema = INICIADO;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Iniciando...");
+      delay(1000);
+      controlaSemaforo();
+    } else if (estadoSistema == INICIADO) {
+      estadoSistema = PAUSADO;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Sistema Pausado");
+    } else if (estadoSistema == PAUSADO) {
+      estadoSistema = AGUARDANDO;
+      voltaAtual = 1;
+      tempoTotal = 0;
+      melhorVoltaTempo = 0;
+      cicloSemaforoInicial = true;
+      resetCheckpoints();
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Pressione o botao");
+      lcd.setCursor(0, 1);
+      lcd.print("para reiniciar");
+    }
+  }
+
+  if (estadoSistema == INICIADO) {
+    controlaCheckpoints();
+    controlaMeta();
+    alternarPagina();
+    exibirLCD();
+  }
+}
