@@ -42,7 +42,7 @@ Para a construção e funcionamento do projeto, são necessários os seguintes c
 
 ---
 
-## Começando a Utilizar
+## Começar a Utilizar
 
 1. **Executar o Projeto:**
    - Ligue o sistema e conecte o carro RC à rede Bluetooth.
