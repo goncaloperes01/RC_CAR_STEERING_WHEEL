@@ -11,7 +11,7 @@ Este projeto visa criar uma experiência inovadora e desafiadora com um carro te
 - Display de monitorização com tempos e dados da volta em curso.
 
 ### Data de Lançamento
-10/12/2024
+- 10/12/2024
 
 ---
 
