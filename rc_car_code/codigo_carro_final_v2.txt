@@ -1,0 +1,92 @@
+#define MOTOR_DIRECTION     1
+#define PIN_DIRECTION_RIGHT 3
+#define PIN_DIRECTION_LEFT  4
+#define PIN_MOTOR_PWM_RIGHT 5
+#define PIN_MOTOR_PWM_LEFT  6
+
+float direcao = 0.0;
+float movimento = 0.0;
+
+const int PWM_MIN = 50;    // Valor mínimo de PWM para garantir força inicial
+const float DEAD_ZONE = 0.05; // Dead Zone
+
+char inputBuffer[20];
+int bufferIndex = 0;
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(PIN_DIRECTION_LEFT, OUTPUT);
+  pinMode(PIN_MOTOR_PWM_LEFT, OUTPUT);
+  pinMode(PIN_DIRECTION_RIGHT, OUTPUT);
+  pinMode(PIN_MOTOR_PWM_RIGHT, OUTPUT);
+
+  motorRun(0, 0);
+}
+
+void loop() {
+  while (Serial.available() > 0) {
+    char received = Serial.read();
+    if (received == '\n') {
+      inputBuffer[bufferIndex] = '\0';
+      bufferIndex = 0;
+      processarDados(inputBuffer);
+    } else if (bufferIndex < sizeof(inputBuffer) - 1) {
+      inputBuffer[bufferIndex++] = received;
+    }
+  }
+}
+
+void processarDados(char* data) {
+  int separatorIndex = String(data).indexOf(',');
+  if (separatorIndex > 0) {
+    direcao = String(data).substring(0, separatorIndex).toFloat();
+    movimento = String(data).substring(separatorIndex + 1).toFloat();
+
+    controlarMotores(direcao, movimento);
+  }
+}
+
+void controlarMotores(float direcao, float movimento) {
+  if (abs(movimento) < DEAD_ZONE) {
+    // Se dentro da zona morta, desligar motores completamente
+    motorRun(0, 0);
+    return;
+  }
+
+  int velocidadeBase = max(abs(movimento) * 255, PWM_MIN);
+
+  int velocidadeEsquerda = velocidadeBase;
+  int velocidadeDireita = velocidadeBase;
+
+  if (direcao > 0) {
+    velocidadeDireita = velocidadeBase * (1 - direcao);
+  } else if (direcao < 0) {
+    velocidadeEsquerda = velocidadeBase * (1 + direcao);
+  }
+
+  if (movimento > 0) {
+    motorRun(velocidadeEsquerda, velocidadeDireita);
+  } else {
+    motorRun(-velocidadeEsquerda, -velocidadeDireita);
+  }
+}
+
+void motorRun(float speedl, float speedr) {
+  if (speedl == 0 && speedr == 0) {
+    // Se velocidade for 0, garantir que o PWM seja desligado
+    digitalWrite(PIN_DIRECTION_LEFT, LOW);
+    digitalWrite(PIN_DIRECTION_RIGHT, LOW);
+    analogWrite(PIN_MOTOR_PWM_LEFT, 0);
+    analogWrite(PIN_MOTOR_PWM_RIGHT, 0);
+    return;
+  }
+
+  int dirL = speedl > 0 ? 0 ^ MOTOR_DIRECTION : 1 ^ MOTOR_DIRECTION;
+  int dirR = speedr > 0 ? 1 ^ MOTOR_DIRECTION : 0 ^ MOTOR_DIRECTION;
+
+  digitalWrite(PIN_DIRECTION_LEFT, dirL);
+  digitalWrite(PIN_DIRECTION_RIGHT, dirR);
+  analogWrite(PIN_MOTOR_PWM_LEFT, constrain(abs(speedl), PWM_MIN, 255));
+  analogWrite(PIN_MOTOR_PWM_RIGHT, constrain(abs(speedr), PWM_MIN, 255));
+}

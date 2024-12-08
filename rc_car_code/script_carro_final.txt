@@ -1,0 +1,73 @@
+import os
+import pygame
+import serial
+import time
+
+# Inicializa o pygame e os módulos de joystick
+pygame.init()
+pygame.joystick.init()
+
+print("A conectar o joystick...")
+porta_com = 'COM8'
+arduino = serial.Serial(porta_com, 57600)
+
+sleep_time = 5
+print(f"Ligado ao Arduino na porta {porta_com} (Aguardar {sleep_time} segundos...)")
+time.sleep(sleep_time)
+
+tic = time.perf_counter()
+ultima_limpeza = tic  # Marca o momento inicial para a primeira limpeza da tela
+
+joysticks = pygame.joystick.get_count()
+if joysticks == 0:
+    print("Nenhum volante ou joystick conectado.")
+else:
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
+    print(f"Dispositivo conectado: {joystick.get_name()}")
+
+    running = True
+    direcao_anterior = -2
+    movimento_anterior = -2
+    clock = pygame.time.Clock()
+
+    try:
+        while running:
+            pygame.event.pump()  # Mantém a fila de eventos gerenciada
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    print("pygame.QUIT! Desligou do lado do PC.")
+                    running = False
+
+            # Captura os valores dos eixos
+            direcao = joystick.get_axis(0)
+            acelerador = (joystick.get_axis(5) + 1) / 2
+            freio = (joystick.get_axis(4) + 1) / 2
+            movimento = acelerador - freio
+
+            if abs(direcao - direcao_anterior) >= 0.01 or abs(movimento - movimento_anterior) >= 0.01:
+                toc = time.perf_counter()
+                print(f"[{toc - tic:.3f}] Direção: {direcao:.2f}, Movimento: {movimento:.2f}")
+                
+                arduino.write(f"{direcao:.2f},{movimento:.2f}\n".encode())
+                direcao_anterior = direcao
+                movimento_anterior = movimento
+
+            # Limpeza periódica do buffer
+            arduino.reset_input_buffer()
+            arduino.reset_output_buffer()
+
+            # Limpar a tela a cada 10 segundos
+            toc = time.perf_counter()
+            if toc - ultima_limpeza >= 10:
+                os.system('cls')  # Use 'cls' no Windows; para Linux/Mac, use 'clear'
+                ultima_limpeza = toc
+
+            # Limitar a 5 FPS
+            clock.tick(10)
+    except Exception as e:
+        print(f"Erro inesperado: {e}")
+    finally:
+        arduino.close()
+        pygame.quit()
